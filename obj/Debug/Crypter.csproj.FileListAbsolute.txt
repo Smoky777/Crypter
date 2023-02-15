@@ -1,0 +1,11 @@
+C:\Users\smoky\Source\Repos\Crypter\bin\Debug\Crypter.exe.config
+C:\Users\smoky\Source\Repos\Crypter\bin\Debug\Crypter.exe
+C:\Users\smoky\Source\Repos\Crypter\bin\Debug\Crypter.pdb
+C:\Users\smoky\Source\Repos\Crypter\obj\Debug\Crypter.csproj.AssemblyReference.cache
+C:\Users\smoky\Source\Repos\Crypter\obj\Debug\Crypter.csproj.SuggestedBindingRedirects.cache
+C:\Users\smoky\Source\Repos\Crypter\obj\Debug\Crypter.Form1.resources
+C:\Users\smoky\Source\Repos\Crypter\obj\Debug\Crypter.Properties.Resources.resources
+C:\Users\smoky\Source\Repos\Crypter\obj\Debug\Crypter.csproj.GenerateResource.cache
+C:\Users\smoky\Source\Repos\Crypter\obj\Debug\Crypter.csproj.CoreCompileInputs.cache
+C:\Users\smoky\Source\Repos\Crypter\obj\Debug\Crypter.exe
+C:\Users\smoky\Source\Repos\Crypter\obj\Debug\Crypter.pdb
