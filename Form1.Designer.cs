@@ -35,7 +35,7 @@
             // 
             // BtnFile
             // 
-            this.BtnFile.Location = new System.Drawing.Point(555, 51);
+            this.BtnFile.Location = new System.Drawing.Point(575, 49);
             this.BtnFile.Name = "BtnFile";
             this.BtnFile.Size = new System.Drawing.Size(161, 23);
             this.BtnFile.TabIndex = 0;
