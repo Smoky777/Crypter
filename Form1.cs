@@ -85,7 +85,7 @@ namespace Crypter
                 {
                     byte[] encryptedBytes = encryptor.TransformFinalBlock(inputBytes, 0, inputBytes.Length);
 
-                    // Write the file header and encrypted bytes to the output file
+                    
                     // Écrit l'en-tête et le contenu chiffré dans le fichier de sortie
                     using (FileStream outputStream = new FileStream(outputFile, FileMode.Create))
                     {
@@ -106,34 +106,52 @@ namespace Crypter
                 aesAlg.Mode = CipherMode.CBC;
                 aesAlg.Padding = PaddingMode.PKCS7;
 
-                // Read the encrypted bytes from the input file
+                // Lire les octets chiffrés du fichier d'entrée
                 byte[] encryptedBytes;
                 using (FileStream fs = new FileStream(inputFile, FileMode.Open))
                 {
-                    // Ignore the first 7 bytes ("DECRYPT" signature and key size)
+
+                    // Ignore les 7 premiers octets (signature "DECRYPT" et taille de la clé).
                     fs.Seek(7, SeekOrigin.Begin);
 
-                    // Read the key size
+                    // Lis la taille de la clé
                     byte[] keySizeBytes = new byte[sizeof(int)];
                     fs.Read(keySizeBytes, 0, keySizeBytes.Length);
                     int keySize = BitConverter.ToInt32(keySizeBytes, 0);
 
-                    // Read the key
+                    // Lis la clé
                     byte[] keyBytes = new byte[keySize];
                     fs.Read(keyBytes, 0, keyBytes.Length);
 
 
-                    // Ajuster la longueur de la clé si nécessaire
-                    if (keyBytes.Length != aesAlg.KeySize / 8)
+                    // Ajuste la clé si besoin
+                    if (keyBytes.Length != 16)
                     {
-                        Array.Resize(ref keyBytes, aesAlg.KeySize / 8);
+                        Array.Resize(ref keyBytes, 16);
                     }
 
                     // Définir la clé pour l'algorithme AES
                     aesAlg.Key = keyBytes;
 
+                    // Lis l'IV
 
-                    // Decrypt the rest of the file
+                    //byte[] iv = new byte[aesAlg.BlockSize / 8];
+                    fs.Read(iv, 0, iv.Length);
+                    aesAlg.IV = iv;
+
+                    // Ajouter un bloc de padding si nécessaire
+                    int paddingSize = aesAlg.BlockSize / 8 - (encryptedBytes.Length % (aesAlg.BlockSize / 8));
+                    if (paddingSize > 0 && paddingSize < 256)
+                    {
+                        byte[] paddingBytes = new byte[paddingSize];
+                        for (int i = 0; i < paddingSize; i++)
+                        {
+                            paddingBytes[i] = (byte)paddingSize;
+                        }
+                        encryptedBytes = encryptedBytes.Concat(paddingBytes).ToArray();
+                    }
+                    
+                    // Dechiffre le reste du fichier
                     using (ICryptoTransform decryptor = aesAlg.CreateDecryptor())
                     {
                         using (MemoryStream msDecrypt = new MemoryStream())
@@ -147,10 +165,10 @@ namespace Crypter
                     }
                 }
 
-                // Decrypt the bytes
+                // Dechiffre les octets
                 byte[] decryptedBytes = DecryptBytes(encryptedBytes, key, iv);
 
-                // Save the decrypted bytes to the original file
+                // Sauve les octets dechiffré dans le fichier original
                 File.WriteAllBytes(inputFile, decryptedBytes);
             }
         }
