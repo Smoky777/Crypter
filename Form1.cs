@@ -85,7 +85,7 @@ namespace Crypter
                 {
                     byte[] encryptedBytes = encryptor.TransformFinalBlock(inputBytes, 0, inputBytes.Length);
 
-                    
+
                     // Écrit l'en-tête et le contenu chiffré dans le fichier de sortie
                     using (FileStream outputStream = new FileStream(outputFile, FileMode.Create))
                     {
@@ -102,7 +102,6 @@ namespace Crypter
             using (Aes aesAlg = Aes.Create())
             {
                 aesAlg.Key = key;
-                aesAlg.IV = iv;
                 aesAlg.Mode = CipherMode.CBC;
                 aesAlg.Padding = PaddingMode.PKCS7;
 
@@ -110,8 +109,7 @@ namespace Crypter
                 byte[] encryptedBytes;
                 using (FileStream fs = new FileStream(inputFile, FileMode.Open))
                 {
-
-                    // Ignore les 7 premiers octets (signature "DECRYPT" et taille de la clé).
+                    // Ignore les 7 premiers octets (signature "CRYPTER" et taille de la clé).
                     fs.Seek(7, SeekOrigin.Begin);
 
                     // Lis la taille de la clé
@@ -123,21 +121,23 @@ namespace Crypter
                     byte[] keyBytes = new byte[keySize];
                     fs.Read(keyBytes, 0, keyBytes.Length);
 
-
-                    // Ajuste la clé si besoin
-                    if (keyBytes.Length != 16)
+                    // Vérifie que la clé a la bonne taille
+                    if (keyBytes.Length != 32)
                     {
-                        Array.Resize(ref keyBytes, 16);
+                        throw new ArgumentException("La clé lue dans le fichier est invalide.");
                     }
 
                     // Définir la clé pour l'algorithme AES
                     aesAlg.Key = keyBytes;
 
                     // Lis l'IV
+                    byte[] fileIV = new byte[aesAlg.BlockSize / 8];
+                    fs.Read(fileIV, 0, fileIV.Length);
+                    aesAlg.IV = fileIV;
 
-                    //byte[] iv = new byte[aesAlg.BlockSize / 8];
-                    fs.Read(iv, 0, iv.Length);
-                    aesAlg.IV = iv;
+                    // Lis les octets chiffrés
+                    encryptedBytes = new byte[fs.Length - fs.Position];
+                    fs.Read(encryptedBytes, 0, encryptedBytes.Length);
 
                     // Ajouter un bloc de padding si nécessaire
                     int paddingSize = aesAlg.BlockSize / 8 - (encryptedBytes.Length % (aesAlg.BlockSize / 8));
@@ -154,24 +154,26 @@ namespace Crypter
                     // Dechiffre le reste du fichier
                     using (ICryptoTransform decryptor = aesAlg.CreateDecryptor())
                     {
-                        using (MemoryStream msDecrypt = new MemoryStream())
+                        using (MemoryStream msDecrypt = new MemoryStream(encryptedBytes, false))
                         {
-                            using (CryptoStream csDecrypt = new CryptoStream(fs, decryptor, CryptoStreamMode.Read))
+                            using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
                             {
-                                csDecrypt.CopyTo(msDecrypt);
-                                encryptedBytes = msDecrypt.ToArray();
+                                csDecrypt.Write(encryptedBytes, 0, encryptedBytes.Length);
                             }
+
+                            byte[] decryptedBytes = msDecrypt.ToArray();
+                            // Écrit les octets déchiffrés dans le fichier de sortie
+                            string outputFile = Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileNameWithoutExtension(inputFile) + "_decrypte.exe");
+                            File.WriteAllBytes(outputFile, decryptedBytes);
                         }
                     }
+
+
+
                 }
-
-                // Dechiffre les octets
-                byte[] decryptedBytes = DecryptBytes(encryptedBytes, key, iv);
-
-                // Sauve les octets dechiffré dans le fichier original
-                File.WriteAllBytes(inputFile, decryptedBytes);
             }
         }
+
 
         private byte[] DecryptBytes(byte[] cipherText, byte[] key, byte[] iv)
         {
@@ -199,7 +201,3 @@ namespace Crypter
     }
 
 }
-
-
-
- 
