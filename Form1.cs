@@ -14,18 +14,9 @@ namespace Crypter
 {
     public partial class Form1 : Form
     {
-        private const string KeyString = "0123456789ABCDEF0123456789ABCDEF";
-        private const string IVString = "0123456789ABCDEF";
-        byte[] key = Encoding.ASCII.GetBytes(KeyString);
-        byte[] iv = Encoding.ASCII.GetBytes(IVString);
-        private const int headerSize = 20; // la taille du header du fichier chiffré
+        Byte[] key = ASCIIEncoding.ASCII.GetBytes("thisisakeyzzzzzz");
+        Byte[] IV = ASCIIEncoding.ASCII.GetBytes("thisisadeltazzzz");
 
-        [Serializable]
-        struct FileHeader
-        {
-            public string Signature; // une signature pour indiquer qu'il s'agit bien d'un fichier chiffré
-            public byte[] Key; // la clé de chiffrement, de taille 16 octets (128 bits)
-        }
 
 
 
@@ -48,153 +39,31 @@ namespace Crypter
         private void BtnCrypt_Click(object sender, EventArgs e)
         {
             string inputFile = TxtExe.Text;
-            string outputFile = Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileNameWithoutExtension(inputFile) + "_monfichier.exe");
+            string outputFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "encrypted.exe");
 
-            // Chiffre le fichier d'entrée en utilisant la clé de chiffrement
-            EncryptFile(inputFile, outputFile, key, iv);
+            EncryptFile(inputFile, outputFile);
 
-            // Déchiffre le fichier de sortie en utilisant la clé de chiffrement
-            DecryptFile(outputFile, key, iv);
-
-            MessageBox.Show("Cryptage terminé");
+            MessageBox.Show("Encryption Done");
         }
 
-
-
-
-
-        private void EncryptFile(string inputFile, string outputFile, byte[] key, byte[] iv)
+        public void EncryptFile(string inputFile, string outputFile)
         {
-            using (Aes aesAlg = Aes.Create())
+            using (FileStream fsInput = new FileStream(inputFile, FileMode.Open, FileAccess.Read))
             {
-                aesAlg.Key = key;
-                aesAlg.IV = iv;
-                aesAlg.Mode = CipherMode.CBC;
-                aesAlg.Padding = PaddingMode.PKCS7;
-
-                // Définit l'en-tête du fichier
-                FileHeader header;
-                header.Signature = "CRYPTER_V1.0";
-                header.Key = key;
-
-                // Lit le fichier d'entrée
-                byte[] inputBytes = File.ReadAllBytes(inputFile);
-
-                // Chiffre le fichier d'entrée en utilisant la clé de chiffrement
-                using (ICryptoTransform encryptor = aesAlg.CreateEncryptor())
+                using (FileStream fsEncrypted = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
                 {
-                    byte[] encryptedBytes = encryptor.TransformFinalBlock(inputBytes, 0, inputBytes.Length);
-
-
-                    // Écrit l'en-tête et le contenu chiffré dans le fichier de sortie
-                    using (FileStream outputStream = new FileStream(outputFile, FileMode.Create))
+                    RijndaelManaged aes = new RijndaelManaged();
+                    aes.Key = key;
+                    aes.IV = IV;
+                    using (CryptoStream cs = new CryptoStream(fsEncrypted, aes.CreateEncryptor(), CryptoStreamMode.Write))
                     {
-                        BinaryFormatter binaryFormatter = new BinaryFormatter();
-                        binaryFormatter.Serialize(outputStream, header);
-                        outputStream.Write(encryptedBytes, 0, encryptedBytes.Length);
+                        fsInput.CopyTo(cs);
                     }
                 }
             }
         }
 
-        private void DecryptFile(string inputFile, byte[] key, byte[] iv)
-        {
-            using (Aes aesAlg = Aes.Create())
-            {
-                aesAlg.Key = key;
-                aesAlg.Mode = CipherMode.CBC;
-                aesAlg.Padding = PaddingMode.PKCS7;
 
-                // Lire les octets chiffrés du fichier d'entrée
-                byte[] encryptedBytes;
-                using (FileStream fs = new FileStream(inputFile, FileMode.Open))
-                {
-                    // Ignore les 7 premiers octets (signature "CRYPTER" et taille de la clé).
-                    fs.Seek(7, SeekOrigin.Begin);
-
-                    // Lis la taille de la clé
-                    byte[] keySizeBytes = new byte[sizeof(int)];
-                    fs.Read(keySizeBytes, 0, keySizeBytes.Length);
-                    int keySize = BitConverter.ToInt32(keySizeBytes, 0);
-
-                    // Lis la clé
-                    byte[] keyBytes = new byte[keySize];
-                    fs.Read(keyBytes, 0, keyBytes.Length);
-
-                    // Vérifie que la clé a la bonne taille
-                    if (keyBytes.Length != 32)
-                    {
-                        throw new ArgumentException("La clé lue dans le fichier est invalide.");
-                    }
-
-                    // Définir la clé pour l'algorithme AES
-                    aesAlg.Key = keyBytes;
-
-                    // Lis l'IV
-                    byte[] fileIV = new byte[aesAlg.BlockSize / 8];
-                    fs.Read(fileIV, 0, fileIV.Length);
-                    aesAlg.IV = fileIV;
-
-                    // Lis les octets chiffrés
-                    encryptedBytes = new byte[fs.Length - fs.Position];
-                    fs.Read(encryptedBytes, 0, encryptedBytes.Length);
-
-                    // Ajouter un bloc de padding si nécessaire
-                    int paddingSize = aesAlg.BlockSize / 8 - (encryptedBytes.Length % (aesAlg.BlockSize / 8));
-                    if (paddingSize > 0 && paddingSize < 256)
-                    {
-                        byte[] paddingBytes = new byte[paddingSize];
-                        for (int i = 0; i < paddingSize; i++)
-                        {
-                            paddingBytes[i] = (byte)paddingSize;
-                        }
-                        encryptedBytes = encryptedBytes.Concat(paddingBytes).ToArray();
-                    }
-                    
-                    // Dechiffre le reste du fichier
-                    using (ICryptoTransform decryptor = aesAlg.CreateDecryptor())
-                    {
-                        using (MemoryStream msDecrypt = new MemoryStream(encryptedBytes, false))
-                        {
-                            using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
-                            {
-                                csDecrypt.Write(encryptedBytes, 0, encryptedBytes.Length);
-                            }
-
-                            byte[] decryptedBytes = msDecrypt.ToArray();
-                            // Écrit les octets déchiffrés dans le fichier de sortie
-                            string outputFile = Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileNameWithoutExtension(inputFile) + "_decrypte.exe");
-                            File.WriteAllBytes(outputFile, decryptedBytes);
-                        }
-                    }
-
-
-
-                }
-            }
-        }
-
-
-        private byte[] DecryptBytes(byte[] cipherText, byte[] key, byte[] iv)
-        {
-            using (Aes aesAlg = Aes.Create())
-            {
-                aesAlg.Key = key;
-                aesAlg.IV = iv;
-                aesAlg.Mode = CipherMode.CBC;
-                aesAlg.Padding = PaddingMode.PKCS7;
-
-                using (MemoryStream msDecrypt = new MemoryStream())
-                {
-                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, aesAlg.CreateDecryptor(), CryptoStreamMode.Write))
-                    {
-                        csDecrypt.Write(cipherText, 0, cipherText.Length);
-                    }
-
-                    return msDecrypt.ToArray();
-                }
-            }
-        }
 
 
 
