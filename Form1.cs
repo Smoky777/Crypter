@@ -14,9 +14,10 @@ namespace Crypter
 {
     public partial class Form1 : Form
     {
-        Byte[] key = ASCIIEncoding.ASCII.GetBytes("thisisakeyzzzzzz");
-        Byte[] IV = ASCIIEncoding.ASCII.GetBytes("thisisadeltazzzz");
-        
+        Byte[] key = ASCIIEncoding.ASCII.GetBytes("thisismyfuckikey");
+        Byte[] IV = ASCIIEncoding.ASCII.GetBytes("thisismytestkeys");
+
+
         public Form1()
         {
             InitializeComponent();
