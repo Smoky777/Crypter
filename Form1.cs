@@ -16,10 +16,7 @@ namespace Crypter
     {
         Byte[] key = ASCIIEncoding.ASCII.GetBytes("thisisakeyzzzzzz");
         Byte[] IV = ASCIIEncoding.ASCII.GetBytes("thisisadeltazzzz");
-
-
-
-
+        
         public Form1()
         {
             InitializeComponent();
@@ -43,6 +40,11 @@ namespace Crypter
 
             EncryptFile(inputFile, outputFile);
 
+            string inFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "encrypted.exe");
+            string outFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "decrypted.exe");
+
+            DecryptFile(inFile, outFile);
+
             MessageBox.Show("Encryption Done");
         }
 
@@ -63,10 +65,22 @@ namespace Crypter
             }
         }
 
-
-
-
-
+        public void DecryptFile(string inputFile, string outputFile)
+        {
+            using (FileStream fsInput = new FileStream(inputFile, FileMode.Open, FileAccess.Read))
+            {
+                using (FileStream fsEncrypted = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
+                {
+                    RijndaelManaged aes = new RijndaelManaged();
+                    aes.Key = key;
+                    aes.IV = IV;
+                    using (CryptoStream cs = new CryptoStream(fsEncrypted, aes.CreateDecryptor(), CryptoStreamMode.Write))
+                    {
+                        fsInput.CopyTo(cs);
+                    }
+                }
+            }
+        }
     }
 
 }
