@@ -1,14 +1,8 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
-using System.Reflection;
-using System.Resources;
 using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
-using System.Linq;
-using System.IO.Compression;
-using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Crypter
 {
@@ -38,12 +32,10 @@ namespace Crypter
         {
             string inputFile = TxtExe.Text;
             string outputFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "encrypted.exe");
-
             EncryptFile(inputFile, outputFile);
 
             string inFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "encrypted.exe");
             string outFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "decrypted.exe");
-
             DecryptFile(inFile, outFile);
 
             MessageBox.Show("Encryption Done");
